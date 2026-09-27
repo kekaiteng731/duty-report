@@ -3,54 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>誠今天我值星</title>
+  <title>今天我值星</title>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: #f1f5f9; margin: 0; padding-bottom: 70px; color: #334155; }
     
-    /* 頂部 Header (對應草稿) */
     .header { background: #0f172a; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
     .header .title { font-weight: bold; font-size: 1.1rem; }
     .header .subtitle { font-size: 0.75rem; color: #94a3b8; margin-top: 2px; }
     .header .user-info { text-align: right; font-size: 0.8rem; }
     .header .logout { background: #ef4444; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; margin-top: 4px; cursor: pointer; }
 
-    /* 點名時段切換切換與值星官標示 */
     .sub-bar { background: #1e293b; color: white; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
     .session-tabs span { padding: 4px 12px; border-radius: 12px; cursor: pointer; background: #334155; margin-right: 4px; }
     .session-tabs span.active { background: #3b82f6; font-weight: bold; }
 
     .container { padding: 12px; }
     .card { background: white; border-radius: 8px; padding: 12px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    .card-title { font-weight: bold; font-size: 0.95rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+    .card-title { font-weight: bold; font-size: 0.95rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
 
-    /* 草稿號碼矩陣樣式 */
     .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; text-align: center; }
     .grid-item { border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 2px; background: #f8fafc; font-size: 0.8rem; }
     .grid-item .num { font-weight: bold; margin-bottom: 4px; }
     .grid-item select { width: 100%; font-size: 0.7rem; border: 1px solid #94a3b8; border-radius: 4px; padding: 1px; }
 
-    /* 警戒/提醒條 (對應草稿) */
     .alert-banner { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; margin-top: 10px; font-weight: bold; text-align: center; }
 
-    /* 底部導覽列 (Bottom Navigation) */
     .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #cbd5e1; display: flex; height: 55px; }
     .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.8rem; color: #64748b; background: none; border: none; cursor: pointer; }
     .nav-btn.active { color: #2563eb; font-weight: bold; }
 
-    .summary-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.9rem; }
+    .summary-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
     .badge { padding: 2px 6px; border-radius: 4px; font-weight: bold; }
     .bg-green { background: #dcfce7; color: #166534; }
     .bg-red { background: #fee2e2; color: #991b1b; }
     .hidden { display: none; }
+
+    /* Modal 彈窗樣式 */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 100; }
+    .modal { background: white; padding: 20px; border-radius: 8px; width: 85%; max-width: 320px; }
+    .modal input, .modal select { width: 100%; padding: 8px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 4px; }
   </style>
 </head>
 <body>
 
-  <!-- 頂部 Header -->
   <div class="header">
     <div>
-      <div class="title">誠今天我值星</div>
+      <div class="title">今天我值星</div>
       <div class="subtitle" id="current-time">2026年9月25日 星期五</div>
     </div>
     <div class="user-info">
@@ -61,8 +60,8 @@
 
   <div class="sub-bar">
     <div class="session-tabs">
-      <span class="active" onclick="switchSession('早點名')">早點名</span>
-      <span onclick="switchSession('晚點名')">晚點名</span>
+      <span class="active" id="tab-sess-1" onclick="switchSession('早點名')">早點名</span>
+      <span id="tab-sess-2" onclick="switchSession('晚點名')">晚點名</span>
     </div>
     <div>今日值星班長: 7建080沈小群</div>
   </div>
@@ -74,29 +73,31 @@
       <div class="card">
         <div class="card-title">
           <span>第 12 建置班</span>
-          <span style="color:#2563eb;">+ 新增集會</span>
+          <button onclick="openMeetingModal()" style="background:#2563eb; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:0.75rem; cursor:pointer;">+ 新增集會</button>
         </div>
 
-        <!-- 15個號碼點名矩陣 (範例號碼 175-189) -->
         <div class="grid" id="member-grid"></div>
 
         <div style="margin-top: 12px; font-size: 0.9rem; font-weight: bold; text-align: right;">
           應到 <span id="val-total">15</span> 人，實到 <span id="val-present">15</span> 人
         </div>
 
-        <button onclick="submitReport()" style="width: 100%; margin-top: 10px; padding: 10px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">提交 / 更正回報</button>
+        <button id="btn-submit-report" onclick="submitReport()" style="width: 100%; margin-top: 10px; padding: 10px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">提交 / 更正回報</button>
       </div>
 
       <div class="alert-banner">
-        ⚠️ 您本日 <span id="alert-session">晚點名</span> 尚未回報！
+        ⚠️ 您本日 <span id="alert-session">早點名</span> 尚未回報！
       </div>
     </div>
 
     <!-- 2. 值星模式頁面 -->
     <div id="page-duty" class="hidden">
       <div class="card" id="district-summary-container">
-        <div class="card-title">全區隊動態彙整看板</div>
-        <div id="summary-list">載入數據中...</div>
+        <div class="card-title">
+          <span>全區隊動態彙整看板</span>
+          <button onclick="loadSummary()" style="background:#64748b; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:0.75rem; cursor:pointer;">重新整理</button>
+        </div>
+        <div id="summary-list">點擊上方切換或重新整理載入數據...</div>
       </div>
 
       <div class="alert-banner" style="background:#fffbebf8; border-color:#fde68a; color:#b45309;">
@@ -106,7 +107,19 @@
 
   </div>
 
-  <!-- 底部導覽列 -->
+  <!-- 新增集會彈窗 Modal -->
+  <div id="meeting-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3 style="margin-top:0;">新增臨時集會/點名</h3>
+      <label style="font-size:0.85rem;">集會名稱</label>
+      <input type="text" id="meeting-name" placeholder="例如：裝備檢查 / 臨時集合">
+      <div style="display:flex; gap:8px; margin-top:12px;">
+        <button onclick="closeMeetingModal()" style="flex:1; padding:8px; border:1px solid #cbd5e1; background:white; border-radius:4px;">取消</button>
+        <button onclick="confirmMeeting()" style="flex:1; padding:8px; background:#2563eb; color:white; border:none; border-radius:4px;">新增</button>
+      </div>
+    </div>
+  </div>
+
   <div class="nav-bar">
     <button class="nav-btn active" id="btn-tab-report" onclick="switchTab('report')">
       <div>📋</div>
@@ -119,14 +132,13 @@
   </div>
 
   <script>
-    // ⚠️ 請將下方的網址替換成你的 Google Apps Script Web App URL
+    // ⚠️ 請確認下方已填入正確的 Apps Script Web App URL
     const API_URL = "https://script.google.com/macros/s/AKfycbyscuMV7HOCf-SxkZo9XTERU1N7L-mwEK9coE8QYfAQ8_j73p3pU2ZoVtEZYySIFrMWsw/exec";
 
     let currentSession = "早點名";
     const totalMembers = 15;
     const startNum = 175;
 
-    // 初始化點名號碼矩陣
     function initGrid() {
       const grid = document.getElementById("member-grid");
       grid.innerHTML = "";
@@ -148,7 +160,6 @@
       calculatePresent();
     }
 
-    // 計算實到人數
     function calculatePresent() {
       const selects = document.querySelectorAll(".status-select");
       let present = 0;
@@ -168,8 +179,8 @@
 
     function switchSession(sess) {
       currentSession = sess;
-      document.querySelectorAll(".session-tabs span").forEach(el => el.classList.remove("active"));
-      event.target.classList.add("active");
+      document.getElementById("tab-sess-1").classList.toggle("active", sess === '早點名');
+      document.getElementById("tab-sess-2").classList.toggle("active", sess === '晚點名');
       document.getElementById("alert-session").innerText = sess;
     }
 
@@ -182,12 +193,26 @@
       if (tab === "duty") loadSummary();
     }
 
+    function openMeetingModal() { document.getElementById("meeting-modal").classList.remove("hidden"); }
+    function closeMeetingModal() { document.getElementById("meeting-modal").classList.add("hidden"); }
+    function confirmMeeting() {
+      const name = document.getElementById("meeting-name").value;
+      if (!name) return alert("請輸入集會名稱");
+      switchSession(name);
+      closeMeetingModal();
+      alert("已新增集會項目：" + name);
+    }
+
     function submitReport() {
+      const btn = document.getElementById("btn-submit-report");
+      btn.innerText = "提交中...";
+      btn.disabled = true;
+
       const data = calculatePresent();
       const payload = {
         report_date: new Date().toISOString().split('T')[0],
         report_type: currentSession,
-        unit_name: "1區隊1班", // 可調整為動態班別
+        unit_name: "1區隊1班",
         total_count: data.total,
         present_count: data.present,
         status_note: data.statusNote,
@@ -195,25 +220,44 @@
       };
 
       fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
-        .then(() => alert("回報成功！已儲存至系統。"))
-        .catch(err => alert("提交失敗：" + err));
+        .then(() => {
+          alert("回報成功！已儲存至系統。");
+          btn.innerText = "提交 / 更正回報";
+          btn.disabled = false;
+        })
+        .catch(err => {
+          alert("提交失敗：" + err);
+          btn.innerText = "提交 / 更正回報";
+          btn.disabled = false;
+        });
     }
 
     function loadSummary() {
+      const listEl = document.getElementById("summary-list");
+      listEl.innerHTML = "數據讀取中...";
+
       fetch(API_URL + "?action=getSummary")
         .then(res => res.json())
-        .then(data => {
+        .then(resData => {
+          if (resData.status !== "success" || !resData.data) {
+            listEl.innerHTML = "尚無統計資料或工作表讀取失敗";
+            return;
+          }
+          const rows = resData.data;
           let html = "";
-          data.forEach((row, idx) => {
-            if (idx === 0) return; // 跳過標題
+          rows.forEach((row, idx) => {
+            if (idx === 0) return; // 略過標題欄
             html += `
               <div class="summary-row">
-                <span>${row[0]}</span>
-                <span>應到 ${row[1]} / 實到 <b class="badge bg-green">${row[2]}</b> / 未到 <b class="badge bg-red">${row[3]}</b></span>
+                <span><b>${row[0] || '單位'}</b></span>
+                <span>應到 ${row[1] || 0} / 實到 <b class="badge bg-green">${row[2] || 0}</b> / 未到 <b class="badge bg-red">${row[3] || 0}</b></span>
               </div>
             `;
           });
-          document.getElementById("summary-list").innerHTML = html || "暫無統計資料";
+          listEl.innerHTML = html || "暫無數據";
+        })
+        .catch(err => {
+          listEl.innerHTML = "無法載入數據，請確認 API URL 是否設置正確。";
         });
     }
 
