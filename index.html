@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>誠今天我值星</title>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: #f1f5f9; margin: 0; padding-bottom: 70px; color: #334155; }
+    
+    /* 頂部 Header (對應草稿) */
+    .header { background: #0f172a; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
+    .header .title { font-weight: bold; font-size: 1.1rem; }
+    .header .subtitle { font-size: 0.75rem; color: #94a3b8; margin-top: 2px; }
+    .header .user-info { text-align: right; font-size: 0.8rem; }
+    .header .logout { background: #ef4444; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; margin-top: 4px; cursor: pointer; }
+
+    /* 點名時段切換切換與值星官標示 */
+    .sub-bar { background: #1e293b; color: white; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
+    .session-tabs span { padding: 4px 12px; border-radius: 12px; cursor: pointer; background: #334155; margin-right: 4px; }
+    .session-tabs span.active { background: #3b82f6; font-weight: bold; }
+
+    .container { padding: 12px; }
+    .card { background: white; border-radius: 8px; padding: 12px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .card-title { font-weight: bold; font-size: 0.95rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+
+    /* 草稿號碼矩陣樣式 */
+    .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; text-align: center; }
+    .grid-item { border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 2px; background: #f8fafc; font-size: 0.8rem; }
+    .grid-item .num { font-weight: bold; margin-bottom: 4px; }
+    .grid-item select { width: 100%; font-size: 0.7rem; border: 1px solid #94a3b8; border-radius: 4px; padding: 1px; }
+
+    /* 警戒/提醒條 (對應草稿) */
+    .alert-banner { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; margin-top: 10px; font-weight: bold; text-align: center; }
+
+    /* 底部導覽列 (Bottom Navigation) */
+    .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #cbd5e1; display: flex; height: 55px; }
+    .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.8rem; color: #64748b; background: none; border: none; cursor: pointer; }
+    .nav-btn.active { color: #2563eb; font-weight: bold; }
+
+    .summary-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.9rem; }
+    .badge { padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    .bg-green { background: #dcfce7; color: #166534; }
+    .bg-red { background: #fee2e2; color: #991b1b; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- 頂部 Header -->
+  <div class="header">
+    <div>
+      <div class="title">誠今天我值星</div>
+      <div class="subtitle" id="current-time">2026年9月25日 星期五</div>
+    </div>
+    <div class="user-info">
+      <div>12建 070張小平</div>
+      <button class="logout">登出</button>
+    </div>
+  </div>
+
+  <div class="sub-bar">
+    <div class="session-tabs">
+      <span class="active" onclick="switchSession('早點名')">早點名</span>
+      <span onclick="switchSession('晚點名')">晚點名</span>
+    </div>
+    <div>今日值星班長: 7建080沈小群</div>
+  </div>
+
+  <div class="container">
+    
+    <!-- 1. 班長動態回報頁面 -->
+    <div id="page-report">
+      <div class="card">
+        <div class="card-title">
+          <span>第 12 建置班</span>
+          <span style="color:#2563eb;">+ 新增集會</span>
+        </div>
+
+        <!-- 15個號碼點名矩陣 (範例號碼 175-189) -->
+        <div class="grid" id="member-grid"></div>
+
+        <div style="margin-top: 12px; font-size: 0.9rem; font-weight: bold; text-align: right;">
+          應到 <span id="val-total">15</span> 人，實到 <span id="val-present">15</span> 人
+        </div>
+
+        <button onclick="submitReport()" style="width: 100%; margin-top: 10px; padding: 10px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">提交 / 更正回報</button>
+      </div>
+
+      <div class="alert-banner">
+        ⚠️ 您本日 <span id="alert-session">晚點名</span> 尚未回報！
+      </div>
+    </div>
+
+    <!-- 2. 值星模式頁面 -->
+    <div id="page-duty" class="hidden">
+      <div class="card" id="district-summary-container">
+        <div class="card-title">全區隊動態彙整看板</div>
+        <div id="summary-list">載入數據中...</div>
+      </div>
+
+      <div class="alert-banner" style="background:#fffbebf8; border-color:#fde68a; color:#b45309;">
+        尚有 <span id="missing-count">5</span> 個建置班未回報本日點名
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 底部導覽列 -->
+  <div class="nav-bar">
+    <button class="nav-btn active" id="btn-tab-report" onclick="switchTab('report')">
+      <div>📋</div>
+      <div>動態回報</div>
+    </button>
+    <button class="nav-btn" id="btn-tab-duty" onclick="switchTab('duty')">
+      <div>🛡️</div>
+      <div>值星模式</div>
+    </button>
+  </div>
+
+  <script>
+    // ⚠️ 請將下方的網址替換成你的 Google Apps Script Web App URL
+    const API_URL = "https://script.google.com/macros/s/AKfycbyscuMV7HOCf-SxkZo9XTERU1N7L-mwEK9coE8QYfAQ8_j73p3pU2ZoVtEZYySIFrMWsw/exec";
+
+    let currentSession = "早點名";
+    const totalMembers = 15;
+    const startNum = 175;
+
+    // 初始化點名號碼矩陣
+    function initGrid() {
+      const grid = document.getElementById("member-grid");
+      grid.innerHTML = "";
+      for (let i = 0; i < totalMembers; i++) {
+        const num = startNum + i;
+        grid.innerHTML += `
+          <div class="grid-item">
+            <div class="num">${num}</div>
+            <select class="status-select" onchange="calculatePresent()">
+              <option value="V">V (到)</option>
+              <option value="特別假">特別假</option>
+              <option value="公差">公差</option>
+              <option value="就醫">就醫</option>
+              <option value="病假">病假</option>
+            </select>
+          </div>
+        `;
+      }
+      calculatePresent();
+    }
+
+    // 計算實到人數
+    function calculatePresent() {
+      const selects = document.querySelectorAll(".status-select");
+      let present = 0;
+      let notes = [];
+
+      selects.forEach((sel, idx) => {
+        if (sel.value === "V") {
+          present++;
+        } else {
+          notes.push((startNum + idx) + sel.value);
+        }
+      });
+
+      document.getElementById("val-present").innerText = present;
+      return { total: totalMembers, present: present, statusNote: notes.join(", ") || "全到" };
+    }
+
+    function switchSession(sess) {
+      currentSession = sess;
+      document.querySelectorAll(".session-tabs span").forEach(el => el.classList.remove("active"));
+      event.target.classList.add("active");
+      document.getElementById("alert-session").innerText = sess;
+    }
+
+    function switchTab(tab) {
+      document.getElementById("btn-tab-report").classList.toggle("active", tab === "report");
+      document.getElementById("btn-tab-duty").classList.toggle("active", tab === "duty");
+      document.getElementById("page-report").classList.toggle("hidden", tab !== "report");
+      document.getElementById("page-duty").classList.toggle("hidden", tab !== "duty");
+
+      if (tab === "duty") loadSummary();
+    }
+
+    function submitReport() {
+      const data = calculatePresent();
+      const payload = {
+        report_date: new Date().toISOString().split('T')[0],
+        report_type: currentSession,
+        unit_name: "1區隊1班", // 可調整為動態班別
+        total_count: data.total,
+        present_count: data.present,
+        status_note: data.statusNote,
+        updated_by: "張班長"
+      };
+
+      fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
+        .then(() => alert("回報成功！已儲存至系統。"))
+        .catch(err => alert("提交失敗：" + err));
+    }
+
+    function loadSummary() {
+      fetch(API_URL + "?action=getSummary")
+        .then(res => res.json())
+        .then(data => {
+          let html = "";
+          data.forEach((row, idx) => {
+            if (idx === 0) return; // 跳過標題
+            html += `
+              <div class="summary-row">
+                <span>${row[0]}</span>
+                <span>應到 ${row[1]} / 實到 <b class="badge bg-green">${row[2]}</b> / 未到 <b class="badge bg-red">${row[3]}</b></span>
+              </div>
+            `;
+          });
+          document.getElementById("summary-list").innerHTML = html || "暫無統計資料";
+        });
+    }
+
+    initGrid();
+  </script>
+</body>
+</html>
